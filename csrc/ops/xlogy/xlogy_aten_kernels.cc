@@ -21,9 +21,12 @@
 #include "ATen/core/ATen_fwd.h"
 #include "ATen/ops/result_type.h"
 #include "absl/status/statusor.h"
+#include "absl/types/span.h"
 #include "c10/core/DefaultDtype.h"
 #include "c10/core/ScalarType.h"
+#include "csrc/common/aten_utils.h"
 #include "csrc/common/cache_key.h"
+#include "csrc/common/device_type.h"
 #include "csrc/common/dtype.h"
 #include "csrc/common/error_utils.h"
 #include "csrc/common/fixed_size_span.h"
@@ -74,6 +77,10 @@ absl::StatusOr<mlir::MlirOp> BuildXlogyShlo(
 at::Tensor& AtenXlogyOutTensor(const at::Tensor& self, const at::Tensor& other,
                                at::Tensor& out) {
   TT_KERNEL(OpName::kXlogyOutTensor, _, (self, other, out), {
+    TT_CHECK_THROW(IsPrivateUse1Device(out), error::kInvalidArgument)
+        << "expected out tensor to be on " << GetPrivateUse1DeviceDebugName()
+        << ", got " << out.device();
+
     TT_CHECK_THROW(!self.is_complex() && !other.is_complex(),
                    error::kInvalidArgument)
         << "expected non-complex dtypes, got x dtype "
@@ -85,6 +92,8 @@ at::Tensor& AtenXlogyOutTensor(const at::Tensor& self, const at::Tensor& other,
     if (c10::isIntegralType(promoted_scalar_type, /*includeBool=*/true)) {
       promoted_scalar_type = c10::get_default_dtype_as_scalartype();
     }
+    TT_THROW_IF_ERROR(ValidateOutDtype(out, promoted_scalar_type,
+                                       /*allow_out_dtype_cast=*/true));
     TT_ASSIGN_OR_THROW(auto computation_dtype,
                        ConvertTo<mlir::ElementType>(promoted_scalar_type));
 
@@ -96,6 +105,14 @@ at::Tensor& AtenXlogyOutTensor(const at::Tensor& self, const at::Tensor& other,
 
     TT_ASSIGN_OR_THROW(const auto out_dims,
                        InferSize(self.sizes(), other.sizes()));
+    if (out.is_alias_of(self) || out.is_alias_of(other)) {
+      TT_CHECK_THROW(absl::MakeConstSpan(out.sizes()) == out_dims,
+                     error::kInvalidArgument)
+          << "output with shape " << ToString(out.sizes())
+          << " doesn't match the broadcast shape of the tensor being "
+             "operated on in-place, which has shape "
+          << ToString(out_dims);
+    }
     TT_ASSIGN_OR_THROW(auto out_dtype,
                        ConvertTo<mlir::ElementType>(out.scalar_type()));
 
