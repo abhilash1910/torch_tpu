@@ -23550,6 +23550,16 @@ class OpTestingFrameworkTest(op_testing.OpInfoTestBase):
 
       self.assert_close_tpu_vs_cpu(compute_f32_c64)
 
+  def test_add_float16_opmath_alpha(self):
+    a = torch.zeros(2, dtype=torch.float16, device="tpu")
+    b = torch.full((2,), 1e-4, dtype=torch.float16, device="tpu")
+    res = torch.add(a, b, alpha=70000.0)
+    self.assertEqual(res.dtype, torch.float16)
+    utils.assert_close(
+        actual=res.cpu(),
+        expected=torch.full((2,), 7.0039, dtype=torch.float16),
+    )
+
 
 if __name__ == "__main__":
   absltest.main()
