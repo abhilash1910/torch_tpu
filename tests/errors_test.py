@@ -3597,18 +3597,28 @@ Device-side assertion tracking was not enabled by user.""",
 
   def test_logit_unsupported_complex(self):
     t = torch.tensor([1 + 1j], device=et.device(), dtype=torch.complex64)
+    real_t = torch.tensor([0.5], device=et.device(), dtype=torch.float32)
     out = torch.tensor([1 + 1j], device=et.device(), dtype=torch.complex64)
     funcs = [
         (lambda: torch.logit(t), "logit()"),
         (lambda: torch.logit(t, out=out), "logit()"),
         (lambda: torch.logit_(t), "logit_()"),
         (lambda: torch.ops.aten.logit_backward(t, t), "logit_backward()"),
+        (lambda: torch.ops.aten.logit_backward(real_t, t), "logit_backward()"),
+        (lambda: torch.ops.aten.logit_backward(t, real_t), "logit_backward()"),
+        (
+            lambda: torch.ops.aten.logit_backward.grad_input(
+                t, real_t, grad_input=torch.empty_like(real_t)
+            ),
+            "logit_backward()",
+        ),
     ]
     for func, op_prefix in funcs:
       with et.assert_raises_message(
           RuntimeError,
           tpu=f"{op_prefix}: expected non-complex dtype, got complex64",
           gpu=""""logit_cuda" not implemented for 'ComplexFloat'""",
+          message_reviewed_by="gunhyun",
       ):
         func()
 
