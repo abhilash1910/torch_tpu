@@ -1403,6 +1403,28 @@ torch_tpu_cc_library(
     ],
 )
 
+torch_tpu_cc_library(
+    name = "unbounded_dynamic_kernel_registry",
+    srcs = ["unbounded_dynamic_kernel_registry.cc"],
+    hdrs = ["unbounded_dynamic_kernel_registry.h"],
+    deps = [
+        ":cache_key",
+        ":compilation",
+        ":compilation_spec",
+        ":error_utils",
+        ":shape",
+        "@com_google_absl//absl/base:no_destructor",
+        "@com_google_absl//absl/base:nullability",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/log:absl_check",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_absl//absl/types:span",
+        "@xla//xla/pjrt:pjrt_client",
+        "@xla//xla/pjrt:pjrt_executable",
+    ],
+)
+
 oss_target(
     torch_tpu_cc_library,
     name = "contain",
