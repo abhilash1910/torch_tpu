@@ -70,7 +70,7 @@ bool IsVmemRef(const Ref& r) {
 }
 
 int64_t ResolveSliceDimSize(const internal::DimDesc& spec, int64_t source_dim) {
-  if (spec.is_all) {
+  if (spec.kind == internal::DimDesc::Kind::kAll) {
     return source_dim;
   }
   if (spec.size.IsInt()) {
@@ -78,7 +78,7 @@ int64_t ResolveSliceDimSize(const internal::DimDesc& spec, int64_t source_dim) {
         << "Slice size cannot be kDynamic; pass a runtime Scalar size or use "
            "all";
   }
-  internal::ValidateI32IndexArg(spec.size, /*require_positive=*/true,
+  internal::ValidateI32IndexArg(spec.size, internal::IndexBounds::kPositive,
                                 "Slice size");
   if (!spec.size.IsInt()) {
     return kDynamic;
@@ -93,8 +93,8 @@ int64_t ResolveSliceDimSize(const internal::DimDesc& spec, int64_t source_dim) {
 
 void ValidateSliceDimOffset(const internal::DimDesc& spec, int64_t source_dim,
                             int64_t slice_size) {
-  internal::ValidateI32IndexArg(spec.offset, /*require_positive=*/false,
-                                "Slice offset");
+  internal::ValidateI32IndexArg(
+      spec.offset, internal::IndexBounds::kNonNegative, "Slice offset");
   if (!spec.offset.IsInt()) {
     return;
   }
@@ -109,7 +109,8 @@ bool IsIdentitySliceDim(const internal::DimDesc& spec, int64_t source_dim,
   if (!spec.offset.IsInt() || spec.offset.AsInt() != 0) {
     return false;
   }
-  return spec.is_all || (slice_size != kDynamic && slice_size == source_dim);
+  return spec.kind == internal::DimDesc::Kind::kAll ||
+         (slice_size != kDynamic && slice_size == source_dim);
 }
 
 mlir::Value EmitMemRefSlice(mlir::ImplicitLocOpBuilder& b, mlir::Value source,
@@ -127,7 +128,7 @@ mlir::Value EmitMemRefSlice(mlir::ImplicitLocOpBuilder& b, mlir::Value source,
     if (sliced_shape[d] != kDynamic) {
       continue;
     }
-    if (!spec.is_all) {
+    if (spec.kind != internal::DimDesc::Kind::kAll) {
       dynamic_sizes.push_back(internal::unwrap(spec.size.ToScalar().ToI32()));
     } else {
       mlir::Value dim_idx = memref::DimOp::create(b, source, d);
@@ -277,7 +278,7 @@ const void* SliceMemRefImpl(const void* base_impl,
     ValidateSliceDimOffset(spec, source_shape[d], sz);
     is_identity_slice &= IsIdentitySliceDim(spec, source_shape[d], sz);
     sliced_shape.push_back(sz);
-    if (!spec.collapsed) {
+    if (spec.kind != DimDesc::Kind::kCollapsed) {
       squeezed_shape.push_back(sz);
     }
   }

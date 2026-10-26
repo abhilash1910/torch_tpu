@@ -38,10 +38,15 @@ inline mlir::MemRefType MemRefTypeOf(const T& val) {
 // Get the mlir::VectorType corresponding to the given Shape.
 mlir::VectorType ToMlirVectorType(const Shape& shape);
 
-void ValidateI32IndexArg(const IndexArg& arg, bool require_positive,
+enum class IndexBounds {
+  kNonNegative,
+  kPositive,
+};
+
+void ValidateI32IndexArg(const IndexArg& arg, IndexBounds bounds,
                          std::string_view name);
 
-mlir::Value ToValidatedI32Value(const IndexArg& arg, bool require_positive,
+mlir::Value ToValidatedI32Value(const IndexArg& arg, IndexBounds bounds,
                                 std::string_view name);
 
 // Converts an optional I32 IndexArg to an optional Scalar, validating the

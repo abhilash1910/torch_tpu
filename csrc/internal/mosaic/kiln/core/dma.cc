@@ -42,7 +42,13 @@ void ValidateCopyRefs(const Ref& src_ref, const Ref& dst_ref,
       << "Non-DMA semaphores are not supported for DMAs involving SMEM";
 }
 
-void EmitRemoteWait(const AsyncRemoteCopyDescriptor& desc, bool wait_target) {
+enum class RemoteWaitDirection {
+  kSend,
+  kRecv,
+};
+
+void EmitRemoteWait(const AsyncRemoteCopyDescriptor& desc,
+                    RemoteWaitDirection direction) {
   mlir::ImplicitLocOpBuilder& b = internal::CurrentBuilder();
   tpu::WaitDMAOp::create(
       b, internal::unwrap(desc.src_ref()), internal::unwrap(desc.send_sem()),
@@ -50,7 +56,7 @@ void EmitRemoteWait(const AsyncRemoteCopyDescriptor& desc, bool wait_target) {
       internal::UnwrapOptionalScalar(desc.device_id()),
       internal::UnwrapOptionalScalar(desc.core_id()),
       /*subcore_id=*/nullptr, /*priority=*/0, /*strict_ordering=*/false,
-      wait_target);
+      /*wait_target=*/direction == RemoteWaitDirection::kRecv);
 }
 
 }  // namespace
@@ -122,14 +128,14 @@ void AsyncRemoteCopyDescriptor::Wait() const {
 void AsyncRemoteCopyDescriptor::WaitSend() const {
   ABSL_CHECK(send_sem_.is_dma())  // CRASH_OK
       << "WaitSend() requires a DMA semaphore";
-  EmitRemoteWait(*this, /*wait_target=*/false);
+  EmitRemoteWait(*this, RemoteWaitDirection::kSend);
 }
 
 void AsyncRemoteCopyDescriptor::WaitRecv() const {
   ABSL_CHECK(recv_sem_.is_dma())  // CRASH_OK
       << "WaitRecv() requires a DMA semaphore (use Semaphore::Wait() for "
          "regular semaphores)";
-  EmitRemoteWait(*this, /*wait_target=*/true);
+  EmitRemoteWait(*this, RemoteWaitDirection::kRecv);
 }
 
 AsyncCopyDescriptor MakeAsyncCopy(Ref src_ref, Ref dst_ref, Semaphore sem,
