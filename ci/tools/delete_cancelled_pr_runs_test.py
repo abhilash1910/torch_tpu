@@ -360,8 +360,6 @@ class DeleteCancelledPrRunsTest(
     self.assertEqual(summary, _summary(unfinished=(1, 2)))
     # Sleeps happen between attempts, not after the last one.
     self.assertEqual(len(self.slept), 2)
-    # The warning names the runs by URL, in order, so they can be opened from
-    # the job log.
     self.assertTrue(
         self._last_logged("warning").endswith(
             f"\nhttps://github.com/{_REPO}/actions/runs/1"
@@ -443,9 +441,7 @@ class DeleteCancelledPrRunsTest(
         },
     )
     self.assertEqual(self._main(fake), 1)
-    # `delete_run` logs an error per run first; the summary from `main` comes
-    # last and names the runs by URL, one per line, so the Actions log viewer
-    # links each one.
+    # `delete_run` logs an error per run first; the summary from `main` is last.
     self.assertEqual(
         self._last_logged("error"),
         "Failed to delete 2 workflow run(s):\n"

@@ -395,10 +395,9 @@ def main(args: Sequence[str] | None = None) -> int:
     return 1
 
   if summary.failed:
-    # These runs still exist: we asked GitHub to delete them and got an error
-    # back. Each one keeps showing up as a cancelled check on the commit, and
-    # removing those checks is the whole point of this job, so don't report
-    # success. `unfinished` runs are not counted: they just hadn't stopped yet.
+    # If we got an error when requesting that GitHub delete a run, this job's
+    # status should be failure, not success. `unfinished` runs are not counted
+    # since they just haven't stopped yet.
     logging.error(
         "Failed to delete %d workflow run(s):\n%s",
         len(summary.failed),
