@@ -16,7 +16,7 @@
 """Deletes cancelled GitHub Actions workflow runs for a closed PR once completed."""
 
 import argparse
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 import dataclasses
 import enum
 import http
@@ -219,6 +219,19 @@ def _gh_run_api(
   )
 
 
+def _run_urls(repository: str, run_ids: Iterable[int]) -> str:
+  """Formats workflow runs as browser URLs, one per line.
+
+  Used for the log lines a human may need to act on: the Actions log viewer
+  turns each URL into a link, and one per line keeps list brackets and commas
+  out of the link text.
+  """
+  return "\n".join(
+      f"https://github.com/{repository}/actions/runs/{run_id}"
+      for run_id in sorted(run_ids)
+  )
+
+
 def get_target_run_ids(
     repository: str, head_ref: str, current_run_id: int
 ) -> tuple[int, ...]:
@@ -354,8 +367,8 @@ def delete_cancelled_pr_runs(
   if remaining:
     logging.warning(
         "Did not delete the following runs because they did not finish"
-        " shutting down in time: %s",
-        sorted(remaining),
+        " shutting down in time:\n%s",
+        _run_urls(repository, remaining),
     )
 
   logging.info("Cleanup complete for branch '%s'.", head_ref)
@@ -382,12 +395,14 @@ def main(args: Sequence[str] | None = None) -> int:
     return 1
 
   if summary.failed:
-    # A run left behind keeps showing up as a cancelled check on the commit,
-    # which is what this job exists to prevent, so don't report success.
+    # These runs still exist: we asked GitHub to delete them and got an error
+    # back. Each one keeps showing up as a cancelled check on the commit, and
+    # removing those checks is the whole point of this job, so don't report
+    # success. `unfinished` runs are not counted: they just hadn't stopped yet.
     logging.error(
-        "Failed to delete %d workflow run(s): %s",
+        "Failed to delete %d workflow run(s):\n%s",
         len(summary.failed),
-        list(summary.failed),
+        _run_urls(parsed.repository, summary.failed),
     )
     return 1
   return 0
