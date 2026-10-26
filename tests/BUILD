@@ -2440,6 +2440,9 @@ torch_tpu_py_test(
 torch_tpu_py_test(
     name = "tracebacks_precedence_test",
     srcs = ["tracebacks_precedence_test.py"],
+    # The flag is memoized on first use, so it's set on the command line rather
+    # than at runtime.
+    args = ["--torch_tpu_internal_mlir_tracebacks=true"],
     tags = [
         "requires-tpu-v5lite",
     ],
@@ -2448,7 +2451,6 @@ torch_tpu_py_test(
         "//shims/absl_py/testing:absltest",
         "//shims/torch:pytorch",
         "//src/torch_tpu",
-        "//src/torch_tpu/_internal:testing",
         "//src/torch_tpu/_internal/export",
     ],
 )
