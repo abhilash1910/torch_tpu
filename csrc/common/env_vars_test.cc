@@ -155,5 +155,34 @@ TEST(EnvVarsTest, GetIntegerEnvOnceReturnsNulloptOnInvalidValue) {
             std::nullopt);
 }
 
+TEST(EnvVarsTest, SetEnvBeforeGetEnvOnceSucceeds) {
+  SetEnv<kTorchTpuBasePortEnvVar>("1234");
+  EXPECT_EQ(GetEnvOnce<kTorchTpuBasePortEnvVar>(), "1234");
+}
+
+TEST(EnvVarsTest, UnsetEnvBeforeGetEnvOnceSucceeds) {
+  SetEnv<kNnodesEnvVar>("2");
+  UnsetEnv<kNnodesEnvVar>();
+  EXPECT_EQ(GetEnvOnce<kNnodesEnvVar>(), std::nullopt);
+}
+
+TEST(EnvVarsDeathTest, SetEnvAfterGetEnvOnceCrashes) {
+  EXPECT_DEATH(
+      {
+        static_cast<void>(GetEnvOnce<kTorchTpuDevicesPerHostEnvVar>());
+        SetEnv<kTorchTpuDevicesPerHostEnvVar>("4");
+      },
+      "TORCH_TPU_DEVICES_PER_HOST.*GetEnvOnce");
+}
+
+TEST(EnvVarsDeathTest, UnsetEnvAfterGetIntegerEnvOnceCrashes) {
+  EXPECT_DEATH(
+      {
+        static_cast<void>(GetIntegerEnvOnce<int, kNodeRankEnvVar>());
+        UnsetEnv<kNodeRankEnvVar>();
+      },
+      "NODE_RANK.*GetEnvOnce");
+}
+
 }  // namespace
 }  // namespace torch_tpu
