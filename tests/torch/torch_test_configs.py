@@ -20,13 +20,1054 @@ https://github.com/pytorch/pytorch/blob/main/docs/source/accelerator/testing.md.
 
 from collections.abc import Mapping, Sequence
 from typing import Final
+import unittest
+
+import torch
+from torch.testing._internal.opinfo import core as opinfo_core
+
+
+def _xfail(
+    cls_name: str,
+    test_name: str,
+    *,
+    dtypes: Sequence[torch.dtype] | None = None,
+) -> opinfo_core.DecorateInfo:
+  """Marks TPU variants of an OpInfo-based test as expected failures."""
+  return opinfo_core.DecorateInfo(
+      unittest.expectedFailure, cls_name, test_name, dtypes=dtypes
+  )
+
+
+def _skip(
+    cls_name: str,
+    test_name: str,
+    *,
+    dtypes: Sequence[torch.dtype] | None = None,
+) -> opinfo_core.DecorateInfo:
+  """Skips TPU variants of an OpInfo-based test, e.g. crashing or hanging."""
+  return opinfo_core.DecorateInfo(
+      unittest.skip("Skipped on TPU"), cls_name, test_name, dtypes=dtypes
+  )
+
+
+# Decorators applied to OpInfo-based tests, i.e. tests parametrized by `@ops`,
+# for TPU.
+#
+# Keyed by test module and then by `OpInfo.full_name`, e.g. "div.floor_rounding".
+# Each `DecorateInfo` applies its decorators, e.g. `unittest.skip`,
+# `unittest.expectedFailure`, `toleranceOverride`, to the TPU variants of the
+# given generic test class and method, optionally narrowed down by dtypes, e.g.
+#
+#   DecorateInfo(
+#       unittest.expectedFailure, "TestCommon", "test_out", dtypes=(torch.int64,)
+#   )
+#
+# Unlike `TEST_EXCLUSIONS`, which can only exclude a generic test method as a
+# whole, this targets individual ops and dtypes of a test method.
+OP_OVERRIDES: Final[
+    Mapping[str, Mapping[str, Sequence[opinfo_core.DecorateInfo]]]
+] = {
+    # go/keep-sorted start block=yes
+    "test_ops_jit": {
+        "__getitem__": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "_segment_reduce.lengths": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "_segment_reduce.offsets": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "addbmm": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "addmm": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "addmm.decomposed": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "cholesky_inverse": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "cholesky_solve": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "combinations": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "copysign": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "cross": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "erfc": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "frexp": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "gather": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "grid_sampler_3d": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "hash_tensor": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "heaviside": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "hypot": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "i0": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "igamma": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "igammac": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "index_add": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "index_copy": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "index_fill": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "index_put": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "index_reduce.amax": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "index_reduce.amin": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "index_reduce.mean": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "index_reduce.prod": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "index_select": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "kthvalue": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "linalg.cholesky": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.cholesky_ex": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.cond": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "linalg.cross": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.det": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.eig": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.eigh": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.eigvals": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.eigvalsh": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.householder_product": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.ldl_factor": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.ldl_factor_ex": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.ldl_solve": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.lstsq": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.lu_solve": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.matrix_norm": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "linalg.matrix_rank.hermitian": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.matrix_sqrth": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.norm": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "linalg.norm.subgradients_at_zero": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "linalg.pinv.hermitian": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.polar": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.slogdet": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "linalg.solve_triangular": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "linalg.svd": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "linalg.svdvals": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "logaddexp": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "logaddexp2": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "logcumsumexp": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "logdet": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "logspace": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "logspace.tensor_overload": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "lu_solve": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "matrix_exp": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "median": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "mode": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nanmedian": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nextafter": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.adaptive_max_pool1d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.avg_pool1d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.cross_entropy": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.grid_sample": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.hardshrink": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.linear": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "nn.functional.max_pool1d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_pool2d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_pool3d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_unpool1d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_unpool1d.grad": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_unpool2d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_unpool2d.grad": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_unpool3d": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.max_unpool3d.grad": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.mish": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.multi_margin_loss": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.multilabel_margin_loss": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.pad.replicate_negative": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "nn.functional.pdist": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nn.functional.rms_norm": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "nn.functional.silu.complex": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "nn.functional.softshrink": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "nonzero_static": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "ormqr": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "prod": [
+            _skip(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "renorm": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "sinc": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "special.airy_ai": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.bessel_j0": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.bessel_j1": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.bessel_y0": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.bessel_y1": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.chebyshev_polynomial_t": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.chebyshev_polynomial_u": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.chebyshev_polynomial_v": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.chebyshev_polynomial_w": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.entr": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.erfcx": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.hermite_polynomial_h": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.hermite_polynomial_he": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.i0e": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.i1": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.i1e": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.laguerre_polynomial_l": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.legendre_polynomial_p": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.log_ndtr": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.modified_bessel_i0": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.modified_bessel_i1": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.modified_bessel_k0": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.modified_bessel_k1": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.ndtri": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.scaled_modified_bessel_k0": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.scaled_modified_bessel_k1": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.shifted_chebyshev_polynomial_t": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.shifted_chebyshev_polynomial_u": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.shifted_chebyshev_polynomial_v": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.shifted_chebyshev_polynomial_w": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.spherical_bessel_j0": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.xlog1py": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "special.zeta": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.float32,),
+            ),
+        ],
+        "std_mean": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "std_mean.unbiased": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "svd": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64,),
+            ),
+        ],
+        "to_sparse": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "trace": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "triangular_solve": [
+            _xfail(
+                "TestJit",
+                "test_variant_consistency_jit",
+                dtypes=(torch.complex64, torch.float32),
+            ),
+        ],
+        "xlogy": [
+            _xfail(
+                "TestJit", "test_jit_alias_remapping", dtypes=(torch.float32,)
+            ),
+        ],
+    },
+    # go/keep-sorted end
+}
 
 # Generic test classes or methods excluded from instantiation for TPU.
 #
 # Keyed by test module, tests are identified by their generic class and method
 # names, e.g. `TestOps` instead of `TestOpsTPU`. In this way, one entry covers
-# all instantiated variants of a test. Use "*" to exclude a whole class.
-TEST_EXCLUSIONS: Final[Mapping[str, Mapping[str, str | Sequence[str]]]] = {
+# all instantiated variants of a test. Use "*" to exclude a whole class. To
+# exclude only some dtype variants generated by `@dtypes` / `@dtypesIf`, map
+# method names to `{"dtypes": [...]}` (or "*" for all variants) instead, e.g.
+#
+#   "TestFoo": {"test_bar": "*", "test_baz": {"dtypes": [torch.complex64]}}
+TEST_EXCLUSIONS: Final[
+    Mapping[
+        str,
+        Mapping[
+            str,
+            str
+            | Sequence[str]
+            | Mapping[str, str | Mapping[str, Sequence[torch.dtype]]],
+        ],
+    ]
+] = {
     # TODO(b/573758862): track per-test exclusion reasons and triage.
     # go/keep-sorted start block=yes
     "distributed/fsdp/test_utils": {
@@ -275,6 +1316,41 @@ TEST_EXCLUSIONS: Final[Mapping[str, Mapping[str, str | Sequence[str]]]] = {
             "test_prune_linear_bias_linear",
         ],
     },
+    "test_autograd": {
+        "TestAutogradDeviceType": [
+            "test_backward_device",
+            "test_checkpointing_without_reentrant_dataparallel",
+            "test_graph_save_on_cpu",
+            "test_graph_save_on_cpu_device",
+            "test_inputbuffer_add_multidevice",
+            "test_min_max_aminmax_median_backprops_to_all_values",
+            "test_pdist_gradgrad",
+            "test_pdist_gradgrad_small_p",
+            "test_pow_real_negative_base_complex_exponent",
+            "test_pyscalar_conversions",
+            "test_reentrant_parent_error_on_cpu",
+            "test_resize_version_bump",
+            "test_scatter_index_reduce_amin_amax_aminmax_backprops_to_all_values",
+            "test_sparse_backward",
+            "test_sparse_ctor_getter_backward",
+            "test_sparse_mask_autograd",
+            "test_unused_output_device",
+        ],
+        "TestAutogradMultipleDispatch": [
+            "test_autograd_composite_implicit_and_dispatch_registration",
+            "test_autograd_multiple_dispatch_registrations",
+        ],
+        "TestAutogradStreamSynchronization": [
+            "test_consumer_to_multi_producer_case_4_correctness",
+            "test_consumer_to_single_producer_case_3_correctness",
+            "test_consumer_to_single_producer_case_3_correctness_non_default_ambient_stream",
+            "test_consumer_to_single_producer_case_4_correctness",
+        ],
+        "TestInputGradBuffers": [
+            "test_different_device_errors",
+            "test_lookup_does_not_deadlock_with_python_dispatch",
+        ],
+    },
     "test_bmm_outer_product": {
         "TestBmmOuterProductDevice": [
             "test_non_current_device_outer_product",
@@ -495,6 +1571,128 @@ TEST_EXCLUSIONS: Final[Mapping[str, Mapping[str, str | Sequence[str]]]] = {
             "test_isclose_nan_equality_shortcut",
             "test_setup_and_teardown_run_for_device_specific_tests",
         ],
+    },
+    "test_torch": {
+        "TestDevicePrecision": [
+            "test_advancedindex_mixed_cpu_devices",
+            "test_advancedindex_mixed_devices_error",
+            "test_copy_noncontig",
+            "test_multidevice_serialization",
+            "test_type_conversions_same_device",
+        ],
+        "TestTorchDeviceType": {
+            "test__local_scalar_dense_with_empty_tensor": "*",
+            "test_addcmul": "*",
+            "test_assertRaisesRegex_ignore_msg_non_native_device": "*",
+            "test_bernoulli_mem_overlap": "*",
+            "test_bmm_matmul_mixed_dtype_error": "*",
+            "test_broadcast": "*",
+            "test_bytes_to_scalar": {
+                "dtypes": [torch.complex128, torch.complex64, torch.float64]
+            },
+            "test_cauchy": "*",
+            "test_cauchy_kstest": "*",
+            "test_cdist_large": "*",
+            "test_cdist_non_contiguous": "*",
+            "test_cdist_non_contiguous_batch": "*",
+            "test_cdist_norm": "*",
+            "test_cdist_norm_batch": "*",
+            "test_clamp_integral_out_of_range_bounds": "*",
+            "test_complex_half_experimental_warning": "*",
+            "test_copy_": "*",
+            "test_copy_all_dtypes_and_devices": "*",
+            "test_copy_math_view": "*",
+            "test_copy_mem_overlap": "*",
+            "test_copy_transpose_math_view": "*",
+            "test_corrcoef": "*",
+            "test_cov": "*",
+            "test_cummax_cummin": "*",
+            "test_deepcopy": {"dtypes": [torch.complex64]},
+            "test_deterministic_empty": {
+                "dtypes": [
+                    torch.complex128,
+                    torch.complex32,
+                    torch.complex64,
+                    torch.uint64,
+                ]
+            },
+            "test_deterministic_resize": "*",
+            "test_device_guard": "*",
+            "test_diff": {"dtypes": [torch.complex128]},
+            "test_diff_noncontig": {"dtypes": [torch.complex128]},
+            "test_dim_function_empty": "*",
+            "test_exponential": "*",
+            "test_exponential_no_zero": "*",
+            "test_fill_barebones_unsigned": {"dtypes": [torch.uint64]},
+            "test_gather_backward_deterministic_path": "*",
+            "test_geometric": "*",
+            "test_geometric_kstest": "*",
+            "test_grad_scale_will_not_overflow": "*",
+            "test_grad_scaler_deprecated_warning": "*",
+            "test_grad_scaler_pass_itself": "*",
+            "test_grad_scaling_accumulation": "*",
+            "test_grad_scaling_autocast": "*",
+            "test_grad_scaling_clipping": "*",
+            "test_grad_scaling_clipping_separate_unscale": "*",
+            "test_grad_scaling_multiple": "*",
+            "test_grad_scaling_penalty": "*",
+            "test_grad_scaling_state_dict": "*",
+            "test_grad_scaling_unscale_sparse": "*",
+            "test_grad_scaling_update_scale": "*",
+            "test_index_add_large_inputs": "*",
+            "test_index_fill_mem_overlap": "*",
+            "test_index_put_mem_overlap": "*",
+            "test_invalid_shapes_grid_sampler": "*",
+            "test_is_set_to": "*",
+            "test_item": {"dtypes": [torch.complex32]},
+            "test_lazy_clone_view_materialize": "*",
+            "test_log_normal": "*",
+            "test_logcumsumexp": "*",
+            "test_lognormal_kstest": "*",
+            "test_masked_fill_mem_overlap": "*",
+            "test_masked_scatter": "*",
+            "test_masked_scatter_mem_overlap": "*",
+            "test_masked_select": "*",
+            "test_memory_format_empty_like": "*",
+            "test_memory_format_operators": "*",
+            "test_multinomial_device_constrain": "*",
+            "test_multinomial_gpu_device_constrain": "*",
+            "test_nondeterministic_alert_AdaptiveMaxPool2d": "*",
+            "test_nondeterministic_alert_FractionalMaxPool2d": "*",
+            "test_nondeterministic_alert_FractionalMaxPool3d": "*",
+            "test_nondeterministic_alert_MaxUnpool1d": "*",
+            "test_nondeterministic_alert_MaxUnpool2d": "*",
+            "test_nondeterministic_alert_MaxUnpool3d": "*",
+            "test_nondeterministic_alert_interpolate_trilinear": "*",
+            "test_nondeterministic_alert_put": "*",
+            "test_normal_shape": "*",
+            "test_normal_small_std_kstest": {"dtypes": [torch.bfloat16]},
+            "test_normal_tail_reach": "*",
+            "test_params_invalidated_with_grads_invalidated_and_graph_partition": (
+                "*"
+            ),
+            "test_params_invalidated_with_grads_invalidated_between_unscale_and_step": (
+                "*"
+            ),
+            "test_put": {"dtypes": [torch.float64, torch.int64]},
+            "test_put_mem_overlap": "*",
+            "test_scalar_check": "*",
+            "test_scatter_add_one_dim_deterministic": "*",
+            "test_scatter_reduce_multiply_unsupported_dtypes": "*",
+            "test_shift_mem_overlap": "*",
+            "test_split_with_sizes_copy_out": "*",
+            "test_storage": "*",
+            "test_storage_all_devices": "*",
+            "test_strides_propagation": "*",
+            "test_take_empty": "*",
+            "test_tensor_set_errors_cross_device": "*",
+            "test_tensor_set_errors_multigpu": "*",
+            "test_tensor_storage_type": "*",
+            "test_ternary_op_mem_overlap": "*",
+            "test_uniform_unique_values": "*",
+            "test_where_scalar_handcrafted_values": "*",
+            "test_zero_dtypes_without_fill_kernel": "*",
+        },
     },
     "test_transformers": {
         "TestSDPAFailureModes": [
