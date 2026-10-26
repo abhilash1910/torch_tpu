@@ -197,10 +197,14 @@ absl::Status InitializeDistributedEnvironment(
   // non-empty, we explicitly overwrite TPU_VISIBLE_CHIPS to match
   // TPU_VISIBLE_DEVICES so that external settings do not override device
   // selection.
-  const auto& visible_devices_env = GetEnvOnce<kTpuVisibleDevicesEnvVar>();
-  const std::string target_dev = (visible_devices_env.has_value() &&
-                                  IsSingleDeviceSpecified(*visible_devices_env))
-                                     ? *visible_devices_env
+  // Read with std::getenv() rather than GetEnvOnce<>(), since the env var is
+  // set below.
+  const char* const visible_devices_env =
+      std::getenv(  // GETENV_OK=the env var is set below.
+          kTpuVisibleDevicesEnvVar);
+  const std::string target_dev = (visible_devices_env != nullptr &&
+                                  IsSingleDeviceSpecified(visible_devices_env))
+                                     ? visible_devices_env
                                      : absl::StrCat(config.local_rank);
   SetEnv<kTpuVisibleDevicesEnvVar>(target_dev);
   SetEnv<kTpuVisibleChipsEnvVar>(target_dev);
@@ -230,8 +234,13 @@ absl::Status InitializeDistributedEnvironment(
   // Avoid multi-process libtpu lock in GCP init, see b/487769788.
   SetEnv<kAllowMultipleLibtpuLoadEnvVar>("1");
 
-  const std::string libtpu_init_args_str =
-      ConfigureLibtpuInitArgs(GetEnvOnce<kLibtpuInitArgsEnvVar>().value_or(""));
+  // Read with std::getenv() rather than GetEnvOnce<>(), since the env var is
+  // set below.
+  const char* const libtpu_init_args =
+      std::getenv(  // GETENV_OK=the env var is set below.
+          kLibtpuInitArgsEnvVar);
+  const std::string libtpu_init_args_str = ConfigureLibtpuInitArgs(
+      libtpu_init_args != nullptr ? libtpu_init_args : "");
   SetEnv<kLibtpuInitArgsEnvVar>(libtpu_init_args_str);
   return absl::OkStatus();
 }
@@ -242,10 +251,14 @@ absl::Status InitializeSingleDeviceEnvironment() {
   // non-empty, we explicitly overwrite TPU_VISIBLE_CHIPS to match
   // TPU_VISIBLE_DEVICES so that external settings do not override device
   // selection.
-  const auto& visible_devices_env = GetEnvOnce<kTpuVisibleDevicesEnvVar>();
-  const std::string target_dev = (visible_devices_env.has_value() &&
-                                  IsSingleDeviceSpecified(*visible_devices_env))
-                                     ? *visible_devices_env
+  // Read with std::getenv() rather than GetEnvOnce<>(), since the env var is
+  // set below.
+  const char* const visible_devices_env =
+      std::getenv(  // GETENV_OK=the env var is set below.
+          kTpuVisibleDevicesEnvVar);
+  const std::string target_dev = (visible_devices_env != nullptr &&
+                                  IsSingleDeviceSpecified(visible_devices_env))
+                                     ? visible_devices_env
                                      : "0";
   SetEnv<kTpuVisibleDevicesEnvVar>(target_dev);
   SetEnv<kTpuVisibleChipsEnvVar>(target_dev);
